@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "3uzi5nnwVo0=",
+  "success": true,
+  "projectFilePath": "H:\\Visual Studio Code Data\\C#\\Academia\\tucil2-13523048\\src\\ImageTree\\ImageTree.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\BRIAN\\.nuget\\packages\\sixlabors.imagesharp\\3.1.7\\sixlabors.imagesharp.3.1.7.nupkg.sha512"
+  ],
+  "logs": []
+}

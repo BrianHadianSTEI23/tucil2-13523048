@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "huE51U7Y12w=",
+  "success": true,
+  "projectFilePath": "H:\\Visual Studio Code Data\\C#\\Academia\\tucil2-13523048\\src\\ImageQuadProcessing\\ImageQuadProcessing.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\BRIAN\\.nuget\\packages\\sixlabors.imagesharp\\3.1.7\\sixlabors.imagesharp.3.1.7.nupkg.sha512"
+  ],
+  "logs": []
+}
