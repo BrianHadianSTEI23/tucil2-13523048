@@ -114,9 +114,8 @@ public class ImageTree {
     }
 
     // build image from processed imageTree
-    public static void BuildImageFromImageTree(ImageTree root, ref Image<Rgba32> constructImage){
-
-        // fill the constructImage
+    public static void BuildImageFromImageTree(ImageTree root, ref Image<Rgba32> constructImage, bool? GIFRequest, ref Image<Rgba32> GIFConstructImage){
+        // fill the constructImage + GIF (if requested)
         if (root != null)
         {
             constructImage.ProcessPixelRows(_ => {
@@ -130,7 +129,23 @@ public class ImageTree {
                     }
                 }
             });
+
+            // validate if the gif is valid
+            if (GIFRequest != null)
+            {
+                if (GIFRequest == true)
+                {
+                    // set the frame time to be 0.1 s
+                    constructImage.Frames.RootFrame.Metadata.GetGifMetadata().FrameDelay = 10;
+
+                    // add the frame to the gif construct image
+                    GIFConstructImage.Frames.AddFrame(constructImage.Frames.RootFrame);   
+                }
+            } else {
+                Console.WriteLine("Request cannot be processed. GIFRequest = null");
+            }
         }
+
 
         return ;
     }

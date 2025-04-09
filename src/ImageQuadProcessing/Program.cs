@@ -55,25 +55,61 @@ class Program {
                         int errorDetectionMethod = Convert.ToInt16(Console.ReadLine());
 
                         // enter if you want GIF
-                        Console.WriteLine("Do you want to make a GIF too?");
-                        string? GIFRequest = Console.ReadLine();
+                        Console.WriteLine("Do you want to make a GIF too?(Y/N)");
+                        bool? GIFRequest = null;
+
+                        // validation GIF request
+                        while (GIFRequest != true && GIFRequest != false)
+                        {
+                            string? response = Console.ReadLine();
+                            if (response != null)
+                            {
+                                if (response[0] == 'Y')
+                                {
+                                    GIFRequest = true; 
+                                } else if (response[0] == 'N') {
+                                    GIFRequest = false; 
+                                }
+                            }  else {
+                                Console.WriteLine("Please follow the option command.");
+                            }
+                        } 
 
                         // enter if you want to set the compression target
-                        Console.WriteLine("Do you want to make to set compression target?");
-                        char? targetRequest = null; 
-                        double compressionTarget = 0;
+                        Console.WriteLine("Do you want to make to set compression target?(Y/N)");
+                        bool? targetRequest = null; 
 
                         // validation compression target request
-                        while (targetRequest != 'N' && targetRequest != 'Y')
+                        while (targetRequest != true && targetRequest != false)
                         {
-                            targetRequest = Convert.ToChar(Console.ReadLine()); // ~broken~
+                            string? response = Console.ReadLine();
+                            if (response != null)
+                            {
+                                if (response[0] == 'Y')
+                                {
+                                    targetRequest = true; 
+                                } else if (response[0] == 'N') {
+                                    targetRequest = false; 
+                                }
+                            } else {
+                                Console.WriteLine("Please follow the option command.");
+                            }
                         } 
 
                         // enter target request value
-                        if (targetRequest == 'Y')
+                        double compressionTarget = 0;
+                        if (targetRequest == true)
                         {
                             Console.WriteLine("Enter your target value : ");
-                            compressionTarget = Convert.ToDouble(Console.ReadLine());
+                            try
+                            {
+                                compressionTarget = Convert.ToDouble(Console.ReadLine());
+                            }
+                            catch (System.Exception)
+                            {
+                                Console.WriteLine("Wrong type target value. Exiting");
+                                throw;
+                            }
                         } else { // it is guaranteed that it will be 'N'
                             // do nothing
                         }
@@ -87,11 +123,12 @@ class Program {
                         // process the ImageTree
                         BuildTree(root, minSize, minSize, threshold, errorDetectionMethod, compressionTarget);
 
-                        // initialize new image
+                        // initialize new image + GIF
                         Image<Rgba32> constructImage = new Image<Rgba32>(root.width, root.height);
-
+                        Image<Rgba32> constructGIF = new Image<Rgba32>(root.width, root.height);
+                        
                         // construct again the image
-                        BuildImageFromImageTree(root, ref constructImage);
+                        BuildImageFromImageTree(root, ref constructImage, GIFRequest, ref constructGIF);
 
                         // save the new image with the same format as before
                         image.SaveAsJpeg($"../test/output/rafi_output.{imageFormat.ToLower()}");
