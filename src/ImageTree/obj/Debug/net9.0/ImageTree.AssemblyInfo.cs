@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ImageTree")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+05b727f5e802ad35ca4ffa002e631c988fb8f6b5")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8a44cd166fbfde6612b5b5d36cd9b537509c6f0d")]
 [assembly: System.Reflection.AssemblyProductAttribute("ImageTree")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ImageTree")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

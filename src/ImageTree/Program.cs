@@ -7,7 +7,10 @@ public class ChildTree {
     public ImageTree? LeftTop;  // may be null  
     public ImageTree? RightTop;    
     public ImageTree? LeftBottom;    
-    public ImageTree? RightBottom;    
+    public ImageTree? RightBottom;  
+
+    // constructor
+    public ChildTree (){}
 }
 
 public class ImageTree {
@@ -34,10 +37,12 @@ public class ImageTree {
     
     // operations
     // build the recursive tree
-    public static void BuildTree(ImageTree root, int minWidth, int minHeight, double threshold, int? errorDetectionMethod, double compressionTarget) {
+    public static void BuildTree(ref ImageTree root, int minWidth, int minHeight, double threshold, int? errorDetectionMethod, double compressionTarget) {
         // check if it's still possible to be partitioned
         if ((root.width / 4) >= minWidth && (root.height / 4) >= minHeight)
         {
+            // debug
+
             double currThreshold = 0;
             switch (errorDetectionMethod) {
                 case 1 : 
@@ -70,37 +75,62 @@ public class ImageTree {
                     // initialize every child tree
                     if (root.image != null)
                     {    
+
+                        // create root copy to be referenced for the lambda function
+                        ImageTree cloneRoot = root;
+
                         /*
                         if the image has odd size of pixels, then the guideline is to left and top frame will always have the fewer ones when pixels is divided into two, but to right and bottom will have the remaining ones
                         */
+                        int leftWidth = root.width / 2;
+                        int rightWidth = root.width - leftWidth;
+                        int topHeight = root.height / 2;
+                        int bottomHeight = root.height - topHeight;
+
+                        // clamp position for boundary index
+                        int rightX = Math.Min(cloneRoot.x + leftWidth, root.image.Width - 1);
+                        int bottomY = Math.Min(cloneRoot.y + topHeight, root.image.Height - 1);
+
+                        // generate child for binding all the child to the root
+                        ChildTree childTree = new ChildTree();
+
                         // left top
-                        ImageTree LeftTop = new ImageTree(root.image, root.x, root.y, root.width / 2, root.height / 2, root.rgba, root, null);
-                        BuildTree(LeftTop, minWidth, minHeight, threshold, errorDetectionMethod, compressionTarget);
+                        ImageTree LeftTop = new ImageTree(cloneRoot.image, cloneRoot.x, cloneRoot.y, leftWidth, topHeight, cloneRoot.rgba, cloneRoot, null);
+                        childTree.LeftTop = LeftTop;
+                        BuildTree(ref LeftTop, minWidth, minHeight, threshold, errorDetectionMethod, compressionTarget);
 
                         // right top
                         Rgba32 rgbaRightTop = default;
                         root.image.ProcessPixelRows(_ => { // get the rgba of the current (x, y)
-                            rgbaRightTop = _.GetRowSpan(root.y)[root.x + (root.width / 2)];
+                            rgbaRightTop = _.GetRowSpan(cloneRoot.y)[cloneRoot.x + leftWidth];
                         });
-                        ImageTree RightTop = new ImageTree(root.image, root.x + (root.width / 2), root.y, root.width % 2 == 0 ? root.width / 2 : (root.width / 2) + 1, root.height / 2, rgbaRightTop, root, null);
-                        BuildTree(RightTop, minWidth, minHeight, threshold, errorDetectionMethod, compressionTarget);
+                        ImageTree RightTop = new ImageTree(cloneRoot.image, cloneRoot.x + leftWidth, cloneRoot.y, rightWidth, topHeight, rgbaRightTop, cloneRoot, null);
+                        childTree.RightTop = RightTop;
+                        BuildTree(ref RightTop, minWidth, minHeight, threshold, errorDetectionMethod, compressionTarget);
 
                         // Left bottom
                         Rgba32 rgbaLeftBottom = default;
                         root.image.ProcessPixelRows(_ => { // get the rgba of the current (x, y)
-                            rgbaLeftBottom = _.GetRowSpan(root.y + (root.height / 2))[root.x];
+                            rgbaLeftBottom = _.GetRowSpan(cloneRoot.y + topHeight)[cloneRoot.x];
                         });
-                        ImageTree LeftBottom = new ImageTree(root.image, root.x, root.y + (root.height / 2), root.width / 2, root.height % 2 == 0 ? root.height / 2 : (root.height / 2) + 1, rgbaLeftBottom, root, null);
-                        BuildTree(LeftBottom, minWidth, minHeight, threshold, errorDetectionMethod, compressionTarget);
+                        ImageTree LeftBottom = new ImageTree(cloneRoot.image, cloneRoot.x, cloneRoot.y + topHeight, leftWidth, bottomHeight, rgbaLeftBottom, cloneRoot, null);
+                        childTree.LeftBottom = LeftBottom;
+                        BuildTree(ref LeftBottom, minWidth, minHeight, threshold, errorDetectionMethod, compressionTarget);
 
                         // Right Bottom
                         Rgba32 rgbaRightBottom = default;
                         root.image.ProcessPixelRows(_ => { // get the rgba of the current (x, y)
-                            rgbaRightBottom = _.GetRowSpan(root.y + (root.height / 2))[root.x + (root.width / 2)];
+                            rgbaRightBottom = _.GetRowSpan(cloneRoot.y + topHeight)[cloneRoot.x + leftWidth];
                         });
-                        ImageTree RightBottom = new ImageTree(root.image, root.x + (root.width / 2), root.y + (root.height / 2), root.width / 2, root.height % 2 == 0 ? root.height / 2 : (root.height / 2) + 1, rgbaRightBottom, root, null);
-                        BuildTree(RightBottom, minWidth, minHeight, threshold, errorDetectionMethod, compressionTarget);
+                        ImageTree RightBottom = new ImageTree(cloneRoot.image, cloneRoot.x + leftWidth, cloneRoot.y + topHeight, rightWidth, bottomHeight, rgbaRightBottom, cloneRoot, null);
+                        childTree.RightBottom = RightBottom;
+                        BuildTree(ref RightBottom, minWidth, minHeight, threshold, errorDetectionMethod, compressionTarget);
+
+                        // bind all the child
+                        root.child = childTree;
                     }
+                } else {
+                    NormalizeImageTree(root);
                 }
             }
         } else {
@@ -116,82 +146,64 @@ public class ImageTree {
     }
 
     // build image from processed imageTree
-    public static void BuildImageFromImageTree(ImageTree root, ref Image<Rgba32> constructImage, bool? GIFRequest, ref Image<Rgba32> GIFConstructImage, ref int currGIFFrame){
-        // fill the constructImage + GIF (if requested)
+    public static void BuildImageFromImageTree(ImageTree? root, ref Image<Rgba32> constructImage){
+        // validation
         if (root.child != null)
         {
             // build the rest
-            currGIFFrame++; // ~borken~ : currGIFFrame wrong because the recursive will always add it and when it reach the gif processing, it already has the value > 10
-            if (root.child.LeftBottom != null)
-            {
-                BuildImageFromImageTree(root.child.LeftBottom, ref constructImage, GIFRequest, ref GIFConstructImage, ref currGIFFrame);
-            }
-            if (root.child.RightBottom != null)
-            {
-                BuildImageFromImageTree(root.child.RightBottom,  ref constructImage, GIFRequest, ref GIFConstructImage, ref currGIFFrame);
-            }
-            if (root.child.LeftTop != null)
-            {
-                BuildImageFromImageTree(root.child.LeftTop, ref constructImage, GIFRequest, ref GIFConstructImage,  ref currGIFFrame);
-            }
-            if (root.child.RightTop != null)
-            {
-                BuildImageFromImageTree(root.child.RightTop, ref constructImage,  GIFRequest, ref GIFConstructImage, ref currGIFFrame);
-            }
-
-            // validate if the gif is valid 
-            // ~broken~ : it won't enter this portion of code
-            if (GIFRequest != null)
-            {
-                if (GIFRequest == true) 
+            BuildImageFromImageTree(root.child.LeftBottom, ref constructImage);
+            BuildImageFromImageTree(root.child.RightBottom,  ref constructImage);
+            BuildImageFromImageTree(root.child.LeftTop, ref constructImage);
+            BuildImageFromImageTree(root.child.RightTop, ref constructImage);
+        } else {
+            constructImage.ProcessPixelRows(_ => {
+                for (int y = root.y; y < root.y + root.height; y++)
                 {
-                    if (currGIFFrame < 10)
+                    var row = _.GetRowSpan(y);
+                    for (int x = root.x; x < root.x + root.width; x++)
                     {
-                        // debug
-                        constructImage.SaveAsJpeg($"GIF{currGIFFrame}");
-
-                        // set frame
-                        var frame = constructImage.Clone().Frames.RootFrame;
-
-                        // set the frame time to be 0.1 s
-                        frame.Metadata.GetGifMetadata().FrameDelay = 10;
-
-                        // add the frame to the gif construct image
-                        GIFConstructImage.Frames.AddFrame(frame);   
-                      
+                        // set new value
+                        // Console.WriteLine($"Drawing area at ({x},{y}) with size {root.width}x{root.height} and color {root.rgba}"); // debug
+                        row[x] = new Rgba32(root.rgba.R, root.rgba.G, root.rgba.B, root.rgba.A);
                     }
                 }
-            } else {
-                Console.WriteLine("Request cannot be processed. GIFRequest = null");
-            }
-        } else { // it is guaranteed that the root will be leaf portion
-            // validation
-            if (root.image != null)
-            {
-                constructImage.ProcessPixelRows(_ => {
-                    for (int y = root.y; y < root.y + root.height; y++)
-                    {
-                        var row = _.GetRowSpan(y);
-                        for (int x = root.x; x < root.x + root.width; x++)
-                        {
-                            // set new value
-                            row[x] = root.rgba;
-                        }
-                    }
-                });
-            } else {
-                Console.WriteLine("Current ImageTree is null. Exiting...");
-            }
+            });
 
         }
+        return ;
+    }
 
+    // build image gif
+    public static void BuildImageGIFFromImageTree(ImageTree? root, bool? GIFRequest, ref Image<Rgba32> GIFConstructImage){
+        // validate if the gif is valid 
+        if (GIFRequest == true) 
+        {
+            if (root != null)
+            {
+                // set frame
+                Image<Rgba32> frame = new Image<Rgba32>(root.image.Width, root.image.Height);
+
+                // set the frame time to be 0.1 s
+                frame.Frames.RootFrame.Metadata.GetGifMetadata().FrameDelay = 10;
+
+                // add the frame to the gif construct image
+                GIFConstructImage.Frames.AddFrame(frame.Frames.RootFrame);   
+
+                if (root.child != null)
+                {
+                    BuildImageGIFFromImageTree(root.child.LeftBottom, GIFRequest, ref GIFConstructImage);
+                    BuildImageGIFFromImageTree(root.child.RightBottom, GIFRequest, ref GIFConstructImage);
+                    BuildImageGIFFromImageTree(root.child.LeftTop, GIFRequest, ref GIFConstructImage);
+                    BuildImageGIFFromImageTree(root.child.RightTop, GIFRequest, ref GIFConstructImage);
+                }                
+            }
+        }
         return ;
     }
 
     // count variance of four of the child : variance
     public static double ImageTreeVariance(ImageTree root) {
         // assumption : root is always safe to be partitioned
-        int n = root.width * root.height;
 
         // count the variance of each rgb
         double RedVariance = VarianceImageTreeColorChannel(root, 'R');
@@ -247,6 +259,7 @@ public class ImageTree {
             root.image.ProcessPixelRows(_ => {
                 for (int y = root.y; y < root.y + root.height; y++)
                 {
+                    // Console.WriteLine(y); // debug
                     var row = _.GetRowSpan(y);
                     for (int x = root.x; x < root.x + root.width; x++)
                     {
@@ -507,6 +520,9 @@ public class ImageTree {
     public static void NormalizeImageTree(ImageTree root){
         // assumption : the imageTree cannot be divided anymore
 
+        // debug
+        // printImageTree(root);
+
         // count each rgb value of the Image Tree and find the mean
         double RedMean = MeanChannelColorValue(root, 'R');
         double BlueMean = MeanChannelColorValue(root, 'B');
@@ -516,7 +532,7 @@ public class ImageTree {
         // Console.WriteLine($"Mean pixel value : ({RedMean}, {GreenMean}, {BlueMean})");
 
         // set every rgb of the Image Tree based on the mean value
-        if (root.image != null)
+        if (root.image != null && root.child != null)
         {
             root.image.ProcessPixelRows(_ => {
                 for (int y = root.y; y < root.y + root.height; y++)
@@ -536,6 +552,10 @@ public class ImageTree {
                     }
                 }
             });
+            root.child.LeftBottom = null;
+            root.child.RightBottom = null;
+            root.child.LeftTop = null;
+            root.child.RightTop = null;
         }
     }
 

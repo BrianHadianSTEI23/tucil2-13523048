@@ -121,31 +121,53 @@ class Program {
                         double threshold = Convert.ToDouble(Console.ReadLine());
 
                         // process the ImageTree
-                        BuildTree(root, minSize, minSize, threshold, errorDetectionMethod, compressionTarget);
+                        BuildTree(ref root, minSize, minSize, threshold, errorDetectionMethod, compressionTarget);
 
-                        // initialize new image + GIF
+                        // debug
+                        // printImageTree(root);
+
+                        // initialize new image
                         Image<Rgba32> constructImage = new Image<Rgba32>(root.width, root.height);
-                        Image<Rgba32> constructGIF = new Image<Rgba32>(root.width, root.height);
-                        int GIFFrame = 0;
                         
                         // construct again the image
-                        BuildImageFromImageTree(root,ref constructImage, GIFRequest, ref constructGIF, ref GIFFrame);
+                        BuildImageFromImageTree(root,ref constructImage);
+
+                        // construct GIF (if requested)
+                        // Image<Rgba32> constructGIF = new Image<Rgba32>(root.width, root.height);
+                        // if (GIFRequest == true)
+                        // {
+                        //     BuildImageGIFFromImageTree(root, GIFRequest, ref constructGIF);   
+                        // }
 
                         // save the new image + GIF (if requested) with the same format as before
-                        image.SaveAsJpeg($"../test/output/output.{imageFormat.ToLower()}");
-                        constructGIF.Save("../test/output/output.gif");
+                        string[] pathArray = path.Split('\\', '.'); // partition the input path
+                        if (imageFormat == "JPEG")
+                        {
+                            constructImage.SaveAsJpeg($"../test/output/{pathArray[pathArray.Length - 2]}_output.jpeg" ); 
+                        } else if (imageFormat == "PNG"){
+                            constructImage.SaveAsPng($"../test/output/{pathArray[pathArray.Length - 2]}_output.png" ); 
+                        } else if (imageFormat == "PBM") {
+                            constructImage.SaveAsPbm($"../test/output/{pathArray[pathArray.Length - 2]}_output.pbm" ); 
+                        } else if (imageFormat == "QOI"){
+                            constructImage.SaveAsQoi($"../test/output/{pathArray[pathArray.Length - 2]}_output.qoi" ); 
+                        } else if (imageFormat == "TGA"){
+                            constructImage.SaveAsTga($"../test/output/{pathArray[pathArray.Length - 2]}_output.tga" ); 
+                        } else if (imageFormat == "TIFF"){
+                            constructImage.SaveAsTiff($"../test/output/{pathArray[pathArray.Length - 2]}_output.tiff" ); 
+                        }
 
 
                         // success message
-                        Console.WriteLine("Your image processed successfully");
-                        if (GIFRequest == true)
-                        {
-                            // Remove the default empty first frame (if not replaced)
-                            // constructGIF.Frames.RemoveFrame(0);
+                        Console.WriteLine($"Your image processed successfully and saved at ../test/output/{pathArray[pathArray.Length - 2]}_output");
+                        // if (GIFRequest == true)
+                        // {
+                        //     // Remove the default empty first frame (if not replaced)
+                        //     // constructGIF.Frames.RemoveFrame(0);
 
-                            // success message
-                            Console.WriteLine("Your GIF image processed successfully");
-                        }
+                        //     // success message
+                        //     constructGIF.SaveAsGif($"../test/output/{pathArray[pathArray.Length - 2]}_output_gif.gif");
+                        //     Console.WriteLine($"Your GIF image processed successfully and saved at ../test/output/{pathArray[pathArray.Length - 2]}_output_gif");
+                        // }
                     } else {
                     Console.WriteLine("No image format available");
                     }
