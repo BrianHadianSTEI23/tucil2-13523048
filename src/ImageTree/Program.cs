@@ -1,4 +1,6 @@
-﻿using SixLabors.ImageSharp;
+﻿using System.Data;
+using Microsoft.VisualBasic;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
 public class ChildTree {
@@ -114,38 +116,74 @@ public class ImageTree {
     }
 
     // build image from processed imageTree
-    public static void BuildImageFromImageTree(ImageTree root, ref Image<Rgba32> constructImage, bool? GIFRequest, ref Image<Rgba32> GIFConstructImage){
+    public static void BuildImageFromImageTree(ImageTree root, ref Image<Rgba32> constructImage, bool? GIFRequest, ref Image<Rgba32> GIFConstructImage, ref int currGIFFrame){
         // fill the constructImage + GIF (if requested)
-        if (root != null)
+        if (root.child != null)
         {
-            constructImage.ProcessPixelRows(_ => {
-                for (int y = root.y; y < root.y + root.height; y++)
-                {
-                    var row = _.GetRowSpan(y);
-                    for (int x = root.x; x < root.x + root.width; x++)
-                    {
-                        // set new value
-                        row[x] = root.rgba;
-                    }
-                }
-            });
+            // build the rest
+            currGIFFrame++; // ~borken~ : currGIFFrame wrong because the recursive will always add it and when it reach the gif processing, it already has the value > 10
+            if (root.child.LeftBottom != null)
+            {
+                BuildImageFromImageTree(root.child.LeftBottom, ref constructImage, GIFRequest, ref GIFConstructImage, ref currGIFFrame);
+            }
+            if (root.child.RightBottom != null)
+            {
+                BuildImageFromImageTree(root.child.RightBottom,  ref constructImage, GIFRequest, ref GIFConstructImage, ref currGIFFrame);
+            }
+            if (root.child.LeftTop != null)
+            {
+                BuildImageFromImageTree(root.child.LeftTop, ref constructImage, GIFRequest, ref GIFConstructImage,  ref currGIFFrame);
+            }
+            if (root.child.RightTop != null)
+            {
+                BuildImageFromImageTree(root.child.RightTop, ref constructImage,  GIFRequest, ref GIFConstructImage, ref currGIFFrame);
+            }
 
-            // validate if the gif is valid
+            // validate if the gif is valid 
+            // ~broken~ : it won't enter this portion of code
             if (GIFRequest != null)
             {
-                if (GIFRequest == true)
+                if (GIFRequest == true) 
                 {
-                    // set the frame time to be 0.1 s
-                    constructImage.Frames.RootFrame.Metadata.GetGifMetadata().FrameDelay = 10;
+                    if (currGIFFrame < 10)
+                    {
+                        // debug
+                        constructImage.SaveAsJpeg($"GIF{currGIFFrame}");
 
-                    // add the frame to the gif construct image
-                    GIFConstructImage.Frames.AddFrame(constructImage.Frames.RootFrame);   
+                        // set frame
+                        var frame = constructImage.Clone().Frames.RootFrame;
+
+                        // set the frame time to be 0.1 s
+                        frame.Metadata.GetGifMetadata().FrameDelay = 10;
+
+                        // add the frame to the gif construct image
+                        GIFConstructImage.Frames.AddFrame(frame);   
+                      
+                    }
                 }
             } else {
                 Console.WriteLine("Request cannot be processed. GIFRequest = null");
             }
-        }
+        } else { // it is guaranteed that the root will be leaf portion
+            // validation
+            if (root.image != null)
+            {
+                constructImage.ProcessPixelRows(_ => {
+                    for (int y = root.y; y < root.y + root.height; y++)
+                    {
+                        var row = _.GetRowSpan(y);
+                        for (int x = root.x; x < root.x + root.width; x++)
+                        {
+                            // set new value
+                            row[x] = root.rgba;
+                        }
+                    }
+                });
+            } else {
+                Console.WriteLine("Current ImageTree is null. Exiting...");
+            }
 
+        }
 
         return ;
     }

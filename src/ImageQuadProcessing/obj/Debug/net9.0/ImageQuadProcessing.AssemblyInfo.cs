@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ImageQuadProcessing")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+25f7eddb7b90474060677c23b6908a520c8e1f63")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+05b727f5e802ad35ca4ffa002e631c988fb8f6b5")]
 [assembly: System.Reflection.AssemblyProductAttribute("ImageQuadProcessing")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ImageQuadProcessing")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

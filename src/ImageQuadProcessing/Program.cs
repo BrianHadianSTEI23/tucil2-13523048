@@ -126,15 +126,26 @@ class Program {
                         // initialize new image + GIF
                         Image<Rgba32> constructImage = new Image<Rgba32>(root.width, root.height);
                         Image<Rgba32> constructGIF = new Image<Rgba32>(root.width, root.height);
+                        int GIFFrame = 0;
                         
                         // construct again the image
-                        BuildImageFromImageTree(root, ref constructImage, GIFRequest, ref constructGIF);
+                        BuildImageFromImageTree(root,ref constructImage, GIFRequest, ref constructGIF, ref GIFFrame);
 
-                        // save the new image with the same format as before
-                        image.SaveAsJpeg($"../test/output/rafi_output.{imageFormat.ToLower()}");
+                        // save the new image + GIF (if requested) with the same format as before
+                        image.SaveAsJpeg($"../test/output/output.{imageFormat.ToLower()}");
+                        constructGIF.Save("../test/output/output.gif");
+
 
                         // success message
                         Console.WriteLine("Your image processed successfully");
+                        if (GIFRequest == true)
+                        {
+                            // Remove the default empty first frame (if not replaced)
+                            // constructGIF.Frames.RemoveFrame(0);
+
+                            // success message
+                            Console.WriteLine("Your GIF image processed successfully");
+                        }
                     } else {
                     Console.WriteLine("No image format available");
                     }
