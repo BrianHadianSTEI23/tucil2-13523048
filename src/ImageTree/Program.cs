@@ -34,6 +34,45 @@ public class ImageTree {
         this.parent = P;
         this.child = C;
     }
+
+    // basic operations
+    // get total simpul 
+    public int getTotalNode(ImageTree root, ref int currTotalNode){
+        // default : currtotalnode = 0
+        if (root.child != null)
+        {
+            currTotalNode++;
+            if (root.child.LeftBottom != null && root.child.RightBottom != null && root.child.LeftTop != null && root.child.RightTop != null)
+            {
+                getTotalNode(root.child.LeftBottom, ref currTotalNode);
+                getTotalNode(root.child.RightBottom, ref currTotalNode);
+                getTotalNode(root.child.LeftTop, ref currTotalNode);
+                getTotalNode(root.child.RightTop, ref currTotalNode);
+            }
+        }
+        return currTotalNode;
+    }
+
+    // get depth of simpul
+    public int getImageTreeDepth(ImageTree root){
+        if (root == null || root.child == null)
+        {
+            return 1;
+        }
+
+        // count for each branchchild
+        int lt = 0, rt = 0, lb = 0, rb = 0;
+        if (root.child.LeftBottom != null && root.child.RightBottom != null && root.child.LeftTop != null && root.child.RightTop != null)
+        {
+            lt = getImageTreeDepth(root.child.LeftTop);
+            rt = getImageTreeDepth(root.child.RightTop);
+            lb = getImageTreeDepth(root.child.LeftBottom);
+            rb = getImageTreeDepth(root.child.RightBottom);
+            
+        }
+
+        return 1 + Math.Max(Math.Max(lt, rt), Math.Max(lb, rb));
+    }
     
     // operations
     // build the recursive tree
@@ -174,7 +213,7 @@ public class ImageTree {
     }
 
     // build image gif
-    public static void BuildImageGIFFromImageTree(ImageTree? root, bool? GIFRequest, ref Image<Rgba32> GIFConstructImage){
+    public static void BuildImageGIFFromImageTree(ImageTree? root, bool? GIFRequest, ref Image<Rgba32> GIFConstructImage, ref int currGIFFrame){
         // validate if the gif is valid 
         if (GIFRequest == true) 
         {
@@ -183,19 +222,40 @@ public class ImageTree {
                 // set frame
                 Image<Rgba32> frame = new Image<Rgba32>(root.image.Width, root.image.Height);
 
+                // develpo frame
+                frame.ProcessPixelRows(_ => {
+                    for (int y = root.y; y < root.y + root.height; y++)
+                    {
+                        var row = _.GetRowSpan(y);
+                        for (int x = root.x; x < root.x + root.width; x++)
+                        {
+                            // set new value
+                            row[x] = new Rgba32(root.rgba.R, root.rgba.G, root.rgba.B, root.rgba.A);
+                        }
+                    }
+                });
+
                 // set the frame time to be 0.1 s
-                frame.Frames.RootFrame.Metadata.GetGifMetadata().FrameDelay = 10;
+                frame.Frames.RootFrame.Metadata.GetGifMetadata().FrameDelay = 2;
 
                 // add the frame to the gif construct image
                 GIFConstructImage.Frames.AddFrame(frame.Frames.RootFrame);   
 
-                if (root.child != null)
+                // increment the currGIFFrame until max GIF Frame
+                currGIFFrame++;
+
+                if (currGIFFrame < 10000) // 10000 is max GIF Frame (set)
                 {
-                    BuildImageGIFFromImageTree(root.child.LeftBottom, GIFRequest, ref GIFConstructImage);
-                    BuildImageGIFFromImageTree(root.child.RightBottom, GIFRequest, ref GIFConstructImage);
-                    BuildImageGIFFromImageTree(root.child.LeftTop, GIFRequest, ref GIFConstructImage);
-                    BuildImageGIFFromImageTree(root.child.RightTop, GIFRequest, ref GIFConstructImage);
-                }                
+                    if (root.child != null)
+                    {
+                        BuildImageGIFFromImageTree(root.child.LeftBottom, GIFRequest, ref GIFConstructImage, ref currGIFFrame);
+                        BuildImageGIFFromImageTree(root.child.RightBottom, GIFRequest, ref GIFConstructImage, ref currGIFFrame);
+                        BuildImageGIFFromImageTree(root.child.LeftTop, GIFRequest, ref GIFConstructImage, ref currGIFFrame);
+                        BuildImageGIFFromImageTree(root.child.RightTop, GIFRequest, ref GIFConstructImage, ref currGIFFrame);
+                    }                
+                    
+                }
+
             }
         }
         return ;

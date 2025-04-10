@@ -8,7 +8,7 @@ basic algorithm
 
 */ 
 using System;
-using System.IO;
+using System.Diagnostics;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.PixelFormats;
@@ -120,6 +120,9 @@ class Program {
                         Console.WriteLine("Enter minimum threshold : ");
                         double threshold = Convert.ToDouble(Console.ReadLine());
 
+                        // start execution time
+                        Stopwatch sw = Stopwatch.StartNew();
+
                         // process the ImageTree
                         BuildTree(ref root, minSize, minSize, threshold, errorDetectionMethod, compressionTarget);
 
@@ -132,42 +135,60 @@ class Program {
                         // construct again the image
                         BuildImageFromImageTree(root,ref constructImage);
 
+
                         // construct GIF (if requested)
-                        // Image<Rgba32> constructGIF = new Image<Rgba32>(root.width, root.height);
-                        // if (GIFRequest == true)
-                        // {
-                        //     BuildImageGIFFromImageTree(root, GIFRequest, ref constructGIF);   
-                        // }
+                        Image<Rgba32> constructGIF = new Image<Rgba32>(root.width, root.height);
+                        int currGIFFrame = 0;
+                        if (GIFRequest == true)
+                        {
+                            BuildImageGIFFromImageTree(root, GIFRequest, ref constructGIF, ref currGIFFrame);   
+                        }
 
                         // save the new image + GIF (if requested) with the same format as before
                         string[] pathArray = path.Split('\\', '.'); // partition the input path
+                        FileInfo fileInfoBeforeCompression = new FileInfo(path);
+                        FileInfo fileInfoAfterCompression = new FileInfo($"../test/output/{pathArray[pathArray.Length - 2]}_output.jpeg"); // ~unfinished : default value, need to adjusted for each image format
                         if (imageFormat == "JPEG")
                         {
                             constructImage.SaveAsJpeg($"../test/output/{pathArray[pathArray.Length - 2]}_output.jpeg" ); 
                         } else if (imageFormat == "PNG"){
+                            fileInfoAfterCompression = new FileInfo($"../test/output/{pathArray[pathArray.Length - 2]}_output.png");
                             constructImage.SaveAsPng($"../test/output/{pathArray[pathArray.Length - 2]}_output.png" ); 
                         } else if (imageFormat == "PBM") {
+                            fileInfoAfterCompression = new FileInfo($"../test/output/{pathArray[pathArray.Length - 2]}_output.pbm");
                             constructImage.SaveAsPbm($"../test/output/{pathArray[pathArray.Length - 2]}_output.pbm" ); 
                         } else if (imageFormat == "QOI"){
+                            fileInfoAfterCompression = new FileInfo($"../test/output/{pathArray[pathArray.Length - 2]}_output.qoi");
                             constructImage.SaveAsQoi($"../test/output/{pathArray[pathArray.Length - 2]}_output.qoi" ); 
                         } else if (imageFormat == "TGA"){
+                            fileInfoAfterCompression = new FileInfo($"../test/output/{pathArray[pathArray.Length - 2]}_output.tga");
                             constructImage.SaveAsTga($"../test/output/{pathArray[pathArray.Length - 2]}_output.tga" ); 
                         } else if (imageFormat == "TIFF"){
+                            fileInfoAfterCompression = new FileInfo($"../test/output/{pathArray[pathArray.Length - 2]}_output.tiff");
                             constructImage.SaveAsTiff($"../test/output/{pathArray[pathArray.Length - 2]}_output.tiff" ); 
                         }
 
+                        // stop executing execution time
+                        sw.Stop();
 
                         // success message
+                        int currTotalNode = 0; // to count how many total node
+                        Console.WriteLine($"Time elapsed : {sw.ElapsedMilliseconds}");
+                        Console.WriteLine($"Total node : {root.getTotalNode(root, ref currTotalNode)}");
+                        Console.WriteLine($"Tree depth : {root.getImageTreeDepth(root)} ms");
+                        Console.WriteLine($"File size before compression : {fileInfoBeforeCompression.Length / 1024.0} ms");
+                        Console.WriteLine($"File size before compression : {fileInfoAfterCompression.Length / 1024.0} ms");
+                        Console.WriteLine($"Compression rate : {(fileInfoAfterCompression.Length / 1024.0) / (fileInfoBeforeCompression.Length / 1024.0)} ms");
                         Console.WriteLine($"Your image processed successfully and saved at ../test/output/{pathArray[pathArray.Length - 2]}_output");
-                        // if (GIFRequest == true)
-                        // {
-                        //     // Remove the default empty first frame (if not replaced)
-                        //     // constructGIF.Frames.RemoveFrame(0);
+                        if (GIFRequest == true)
+                        {
+                            // Remove the default empty first frame (if not replaced)
+                            // constructGIF.Frames.RemoveFrame(0);
 
-                        //     // success message
-                        //     constructGIF.SaveAsGif($"../test/output/{pathArray[pathArray.Length - 2]}_output_gif.gif");
-                        //     Console.WriteLine($"Your GIF image processed successfully and saved at ../test/output/{pathArray[pathArray.Length - 2]}_output_gif");
-                        // }
+                            // success message
+                            constructGIF.SaveAsGif($"../test/output/{pathArray[pathArray.Length - 2]}_output_gif.gif");
+                            Console.WriteLine($"Your GIF image processed successfully and saved at ../test/output/{pathArray[pathArray.Length - 2]}_output_gif");
+                        }
                     } else {
                     Console.WriteLine("No image format available");
                     }
