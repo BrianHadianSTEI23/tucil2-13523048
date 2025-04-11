@@ -52,7 +52,18 @@ class Program {
                         Console.WriteLine("2. Mean Absolute Deviation");
                         Console.WriteLine("3. Max Pixel Difference");
                         Console.WriteLine("4. Entropy");
+                        // Console.WriteLine("5. SSIM");
                         int errorDetectionMethod = Convert.ToInt16(Console.ReadLine());
+
+                        // enter the output path
+                        Console.WriteLine("Enter output path : ");
+                        string? outputPath = null;
+                        outputPath = Console.ReadLine();
+                        string directory = Path.GetDirectoryName(outputPath);
+                        if (!Directory.Exists(directory))
+                        {
+                            Directory.CreateDirectory(directory);
+                        }
 
                         // enter if you want GIF
                         Console.WriteLine("Do you want to make a GIF too?(Y/N)");
@@ -76,43 +87,43 @@ class Program {
                         } 
 
                         // enter if you want to set the compression target
-                        Console.WriteLine("Do you want to make to set compression target?(Y/N)");
-                        bool? targetRequest = null; 
+                        // Console.WriteLine("Do you want to make to set compression target?(Y/N)");
+                        // bool? targetRequest = false; 
 
                         // validation compression target request
-                        while (targetRequest != true && targetRequest != false)
-                        {
-                            string? response = Console.ReadLine();
-                            if (response != null)
-                            {
-                                if (response[0] == 'Y')
-                                {
-                                    targetRequest = true; 
-                                } else if (response[0] == 'N') {
-                                    targetRequest = false; 
-                                }
-                            } else {
-                                Console.WriteLine("Please follow the option command.");
-                            }
-                        } 
+                        // while (targetRequest != true && targetRequest != false)
+                        // {
+                        //     string? response = Console.ReadLine();
+                        //     if (response != null)
+                        //     {
+                        //         if (response[0] == 'Y')
+                        //         {
+                        //             targetRequest = true; 
+                        //         } else if (response[0] == 'N') {
+                        //             targetRequest = false; 
+                        //         }
+                        //     } else {
+                        //         Console.WriteLine("Please follow the option command.");
+                        //     }
+                        // } 
 
                         // enter target request value
-                        double compressionTarget = 0;
-                        if (targetRequest == true)
-                        {
-                            Console.WriteLine("Enter your target value : ");
-                            try
-                            {
-                                compressionTarget = Convert.ToDouble(Console.ReadLine());
-                            }
-                            catch (System.Exception)
-                            {
-                                Console.WriteLine("Wrong type target value. Exiting");
-                                throw;
-                            }
-                        } else { // it is guaranteed that it will be 'N'
-                            // do nothing
-                        }
+                        // double compressionTarget = 0;
+                        // if (targetRequest == true)
+                        // {
+                        //     Console.WriteLine("Enter your target value : ");
+                        //     try
+                        //     {
+                        //         compressionTarget = Convert.ToDouble(Console.ReadLine());
+                        //     }
+                        //     catch (System.Exception)
+                        //     {
+                        //         Console.WriteLine("Wrong type target value. Exiting");
+                        //         throw;
+                        //     }
+                        // } else { // it is guaranteed that it will be 'N'
+                        //     // do nothing
+                        // }
 
                         // enter all the config by the user
                         Console.WriteLine("Enter minimum size block : ");
@@ -124,7 +135,7 @@ class Program {
                         Stopwatch sw = Stopwatch.StartNew();
 
                         // process the ImageTree
-                        BuildTree(ref root, minSize, minSize, threshold, errorDetectionMethod, compressionTarget);
+                        BuildTree(ref root, minSize, minSize, threshold, errorDetectionMethod, ref root);
 
                         // debug
                         // printImageTree(root);
@@ -134,7 +145,6 @@ class Program {
                         
                         // construct again the image
                         BuildImageFromImageTree(root,ref constructImage);
-
 
                         // construct GIF (if requested)
                         Image<Rgba32> constructGIF = new Image<Rgba32>(root.width, root.height);
@@ -147,39 +157,33 @@ class Program {
                         // save the new image + GIF (if requested) with the same format as before
                         string[] pathArray = path.Split('\\', '.'); // partition the input path
                         FileInfo fileInfoBeforeCompression = new FileInfo(path);
-                        FileInfo fileInfoAfterCompression = new FileInfo($"../test/output/{pathArray[pathArray.Length - 2]}_output.jpeg"); // ~unfinished : default value, need to adjusted for each image format
-                        if (imageFormat == "JPEG")
+                        FileInfo fileInfoAfterCompression = new FileInfo(outputPath); // ~unfinished : default value, need to adjusted for each image format
+                        if (outputPath != null)
                         {
-                            constructImage.SaveAsJpeg($"../test/output/{pathArray[pathArray.Length - 2]}_output.jpeg" ); 
-                        } else if (imageFormat == "PNG"){
-                            fileInfoAfterCompression = new FileInfo($"../test/output/{pathArray[pathArray.Length - 2]}_output.png");
-                            constructImage.SaveAsPng($"../test/output/{pathArray[pathArray.Length - 2]}_output.png" ); 
-                        } else if (imageFormat == "PBM") {
-                            fileInfoAfterCompression = new FileInfo($"../test/output/{pathArray[pathArray.Length - 2]}_output.pbm");
-                            constructImage.SaveAsPbm($"../test/output/{pathArray[pathArray.Length - 2]}_output.pbm" ); 
-                        } else if (imageFormat == "QOI"){
-                            fileInfoAfterCompression = new FileInfo($"../test/output/{pathArray[pathArray.Length - 2]}_output.qoi");
-                            constructImage.SaveAsQoi($"../test/output/{pathArray[pathArray.Length - 2]}_output.qoi" ); 
-                        } else if (imageFormat == "TGA"){
-                            fileInfoAfterCompression = new FileInfo($"../test/output/{pathArray[pathArray.Length - 2]}_output.tga");
-                            constructImage.SaveAsTga($"../test/output/{pathArray[pathArray.Length - 2]}_output.tga" ); 
-                        } else if (imageFormat == "TIFF"){
-                            fileInfoAfterCompression = new FileInfo($"../test/output/{pathArray[pathArray.Length - 2]}_output.tiff");
-                            constructImage.SaveAsTiff($"../test/output/{pathArray[pathArray.Length - 2]}_output.tiff" ); 
+                            if (imageFormat == "JPEG")
+                            {
+                                constructImage.Save(outputPath); 
+                            } else if (imageFormat == "PNG"){
+                                fileInfoAfterCompression = new FileInfo($"../test/output/{pathArray[pathArray.Length - 2]}_output.png");
+                                constructImage.Save(outputPath); 
+                            } else if (imageFormat == "PBM") {
+                                fileInfoAfterCompression = new FileInfo($"../test/output/{pathArray[pathArray.Length - 2]}_output.pbm");
+                                constructImage.Save(outputPath); 
+                            } else if (imageFormat == "QOI"){
+                                fileInfoAfterCompression = new FileInfo($"../test/output/{pathArray[pathArray.Length - 2]}_output.qoi");
+                                constructImage.Save(outputPath ); 
+                            } else if (imageFormat == "TGA"){
+                                fileInfoAfterCompression = new FileInfo($"../test/output/{pathArray[pathArray.Length - 2]}_output.tga");
+                                constructImage.Save(outputPath); 
+                            } else if (imageFormat == "TIFF"){
+                                fileInfoAfterCompression = new FileInfo($"../test/output/{pathArray[pathArray.Length - 2]}_output.tiff");
+                                constructImage.Save(outputPath); 
+                            }
+                        } else {
+                            Console.WriteLine("Output path not valid");
                         }
 
-                        // stop executing execution time
-                        sw.Stop();
-
-                        // success message
-                        int currTotalNode = 0; // to count how many total node
-                        Console.WriteLine($"Time elapsed : {sw.ElapsedMilliseconds}");
-                        Console.WriteLine($"Total node : {root.getTotalNode(root, ref currTotalNode)}");
-                        Console.WriteLine($"Tree depth : {root.getImageTreeDepth(root)} ms");
-                        Console.WriteLine($"File size before compression : {fileInfoBeforeCompression.Length / 1024.0} ms");
-                        Console.WriteLine($"File size before compression : {fileInfoAfterCompression.Length / 1024.0} ms");
-                        Console.WriteLine($"Compression rate : {(fileInfoAfterCompression.Length / 1024.0) / (fileInfoBeforeCompression.Length / 1024.0)} ms");
-                        Console.WriteLine($"Your image processed successfully and saved at ../test/output/{pathArray[pathArray.Length - 2]}_output");
+                        // process the GIF request
                         if (GIFRequest == true)
                         {
                             // Remove the default empty first frame (if not replaced)
@@ -187,8 +191,25 @@ class Program {
 
                             // success message
                             constructGIF.SaveAsGif($"../test/output/{pathArray[pathArray.Length - 2]}_output_gif.gif");
+                        }
+
+                        // stop executing execution time
+                        sw.Stop();
+
+                        // success message
+                        int currTotalNode = 0; // to count how many total node
+                        Console.WriteLine($"Time elapsed : {sw.ElapsedMilliseconds} ms");
+                        Console.WriteLine($"Total node : {root.getTotalNode(root, ref currTotalNode)}");
+                        Console.WriteLine($"Tree depth : {root.getImageTreeDepth(root)}");
+                        Console.WriteLine($"File size before compression : {fileInfoBeforeCompression.Length / 1024.0} kb");
+                        Console.WriteLine($"File size before compression : {fileInfoAfterCompression.Length / 1024.0} kb");
+                        Console.WriteLine($"Compression rate : {1 - (fileInfoAfterCompression.Length / 1024.0) / (fileInfoBeforeCompression.Length / 1024.0)}");
+                        Console.WriteLine($"Your image processed successfully and saved at ../test/output/{pathArray[pathArray.Length - 2]}_output");
+                        if (GIFRequest == true)
+                        {
                             Console.WriteLine($"Your GIF image processed successfully and saved at ../test/output/{pathArray[pathArray.Length - 2]}_output_gif");
                         }
+
                     } else {
                     Console.WriteLine("No image format available");
                     }

@@ -76,7 +76,7 @@ public class ImageTree {
     
     // operations
     // build the recursive tree
-    public static void BuildTree(ref ImageTree root, int minWidth, int minHeight, double threshold, int? errorDetectionMethod, double compressionTarget) {
+    public static void BuildTree(ref ImageTree root, int minWidth, int minHeight, double threshold, int? errorDetectionMethod, ref ImageTree top) {
         // check if it's still possible to be partitioned
         if ((root.width / 4) >= minWidth && (root.height / 4) >= minHeight)
         {
@@ -97,6 +97,9 @@ public class ImageTree {
 
                 case 4 : 
                     currThreshold = EntropyImageTree(root);
+                    break;
+                case 5 : 
+                    currThreshold = SSIMImageTree(root, ref top);
                     break;
                 default : 
                     Console.WriteLine("No method as such. Exiting...");
@@ -136,7 +139,7 @@ public class ImageTree {
                         // left top
                         ImageTree LeftTop = new ImageTree(cloneRoot.image, cloneRoot.x, cloneRoot.y, leftWidth, topHeight, cloneRoot.rgba, cloneRoot, null);
                         childTree.LeftTop = LeftTop;
-                        BuildTree(ref LeftTop, minWidth, minHeight, threshold, errorDetectionMethod, compressionTarget);
+                        BuildTree(ref LeftTop, minWidth, minHeight, threshold, errorDetectionMethod, ref top);
 
                         // right top
                         Rgba32 rgbaRightTop = default;
@@ -145,7 +148,7 @@ public class ImageTree {
                         });
                         ImageTree RightTop = new ImageTree(cloneRoot.image, cloneRoot.x + leftWidth, cloneRoot.y, rightWidth, topHeight, rgbaRightTop, cloneRoot, null);
                         childTree.RightTop = RightTop;
-                        BuildTree(ref RightTop, minWidth, minHeight, threshold, errorDetectionMethod, compressionTarget);
+                        BuildTree(ref RightTop, minWidth, minHeight, threshold, errorDetectionMethod, ref top);
 
                         // Left bottom
                         Rgba32 rgbaLeftBottom = default;
@@ -154,7 +157,7 @@ public class ImageTree {
                         });
                         ImageTree LeftBottom = new ImageTree(cloneRoot.image, cloneRoot.x, cloneRoot.y + topHeight, leftWidth, bottomHeight, rgbaLeftBottom, cloneRoot, null);
                         childTree.LeftBottom = LeftBottom;
-                        BuildTree(ref LeftBottom, minWidth, minHeight, threshold, errorDetectionMethod, compressionTarget);
+                        BuildTree(ref LeftBottom, minWidth, minHeight, threshold, errorDetectionMethod, ref top);
 
                         // Right Bottom
                         Rgba32 rgbaRightBottom = default;
@@ -163,7 +166,7 @@ public class ImageTree {
                         });
                         ImageTree RightBottom = new ImageTree(cloneRoot.image, cloneRoot.x + leftWidth, cloneRoot.y + topHeight, rightWidth, bottomHeight, rgbaRightBottom, cloneRoot, null);
                         childTree.RightBottom = RightBottom;
-                        BuildTree(ref RightBottom, minWidth, minHeight, threshold, errorDetectionMethod, compressionTarget);
+                        BuildTree(ref RightBottom, minWidth, minHeight, threshold, errorDetectionMethod, ref top);
 
                         // bind all the child
                         root.child = childTree;
@@ -260,6 +263,76 @@ public class ImageTree {
         }
         return ;
     }
+    // bonus ssim : SSIMImageTree
+    public static double SSIMImageTree(ImageTree root, ref ImageTree top){ // `top` variable is a the toppest ImageTree
+        const double K1 = 0.01;
+        const double K2 = 0.03;
+        const double L = 255;
+        const double C1 = K1 * K1 * L * L;
+        const double C2 = K2 * K2 * L * L;
+        const double WRed = 0.2126;
+        const double WGreen = 0.7152;
+        const double WBlue = 0.0722;
+
+        // mean of current image of each color channel
+        double meanColorChannelValueRed = MeanChannelColorValue(root, 'R');
+        double meanColorChannelValueGreen = MeanChannelColorValue(root, 'G');
+        double meanColorChannelValueBlue = MeanChannelColorValue(root, 'B');
+        // Console.WriteLine(meanColorChannelValueRed);
+        // Console.WriteLine(meanColorChannelValueGreen);
+        // Console.WriteLine(meanColorChannelValueBlue);
+
+        // mean of original image of each color
+        double meanColorChannelValueOriginalRed= MeanChannelColorValue(top, 'R');
+        double meanColorChannelValueOriginalGreen= MeanChannelColorValue(top, 'G');
+        double meanColorChannelValueOriginalBlue= MeanChannelColorValue(top, 'B');
+        // Console.WriteLine(meanColorChannelValueOriginalRed);
+        // Console.WriteLine(meanColorChannelValueOriginalGreen);
+        // Console.WriteLine(meanColorChannelValueOriginalBlue);
+
+        // variance of current image of each color
+        double varianceRed = VarianceImageTreeColorChannel(root, 'R');
+        double varianceGreen = VarianceImageTreeColorChannel(root, 'G');
+        double varianceBlue = VarianceImageTreeColorChannel(root, 'B');
+        // Console.WriteLine(varianceRed);
+        // Console.WriteLine(varianceGreen);
+        // Console.WriteLine(varianceBlue);
+
+        // variance of original image of each color channel
+        double varianceRedOriginal = VarianceImageTreeColorChannel(top, 'R');
+        double varianceGreenOriginal = VarianceImageTreeColorChannel(top, 'G');
+        double varianceBlueOriginal = VarianceImageTreeColorChannel(top, 'B');
+        // Console.WriteLine(varianceRedOriginal);
+        // Console.WriteLine(varianceGreenOriginal);
+        // Console.WriteLine(varianceBlueOriginal);
+
+        // covariance of each color channel for both image
+        double covarianceRed = SSIMCovarianceColorChannelImageTree(root, ref top, 'R');
+        double covarianceGreen = SSIMCovarianceColorChannelImageTree(root, ref top, 'G');
+        double covarianceBlue = SSIMCovarianceColorChannelImageTree(root, ref top, 'B');
+        // Console.WriteLine(covarianceRed);
+        // Console.WriteLine(covarianceGreen);
+        // Console.WriteLine(covarianceBlue);
+
+        // numerator
+        double numeratorRed = ((2 * meanColorChannelValueOriginalRed * meanColorChannelValueRed) + C1) * ((2 * covarianceRed) + C2);
+        double numeratorGreen = ((2 * meanColorChannelValueOriginalGreen * meanColorChannelValueGreen) + C1) * ((2 * covarianceGreen) + C2);
+        double numeratorBlue = ((2 * meanColorChannelValueOriginalBlue * meanColorChannelValueBlue) + C1) * ((2 * covarianceBlue) + C2);
+
+        // denumerator
+        double denumeratorRed = (((meanColorChannelValueOriginalRed * meanColorChannelValueOriginalRed) + (meanColorChannelValueRed * meanColorChannelValueRed)) + C1) * (varianceRed + varianceRedOriginal + C2);
+        double denumeratorGreen = (((meanColorChannelValueOriginalGreen * meanColorChannelValueOriginalGreen) + (meanColorChannelValueGreen * meanColorChannelValueGreen)) + C1) * (varianceGreen + varianceGreenOriginal + C2);
+        double denumeratorBlue = (((meanColorChannelValueOriginalBlue * meanColorChannelValueOriginalBlue) + (meanColorChannelValueBlue * meanColorChannelValueBlue)) + C1) * (varianceBlue + varianceBlueOriginal + C2);
+
+        // SSIM for each color channel
+        double SSIMRed = numeratorRed / denumeratorRed;
+        double SSIMGreen = numeratorGreen / denumeratorGreen;
+        double SSIMBlue = numeratorBlue / denumeratorBlue;
+
+        // debug
+        Console.WriteLine("Res : " + (WRed * SSIMRed) + (WGreen * SSIMGreen) + (WBlue * SSIMBlue));
+        return (WRed * SSIMRed) + (WGreen * SSIMGreen) + (WBlue * SSIMBlue);
+    }
 
     // count variance of four of the child : variance
     public static double ImageTreeVariance(ImageTree root) {
@@ -296,7 +369,6 @@ public class ImageTree {
                             differenceColorChannelSquared += Math.Pow(pixel.R - colorChannelMean, 2);
                         } else if (colorChannel == 'G') {
                             differenceColorChannelSquared += Math.Pow(pixel.B - colorChannelMean, 2);
-
                         } else if (colorChannel == 'B') {
                             differenceColorChannelSquared += Math.Pow(pixel.B - colorChannelMean, 2);
                         }
@@ -309,6 +381,39 @@ public class ImageTree {
 
 
         return differenceColorChannelSquared / (root.width * root.height);
+    }
+
+
+    // bonus ssim : covariance of two image of a certain color channel
+    public static double SSIMCovarianceColorChannelImageTree(ImageTree root, ref ImageTree top, char colorChannel){
+        // copy top
+        ImageTree cloneTop = top;
+        
+        // covariance is compared with the original image
+        double colorChannelMean = MeanChannelColorValue(root, colorChannel);
+        double colorChannelMeanOriginal = MeanChannelColorValue(cloneTop, colorChannel);
+
+        // count covariance
+        double covarianceValue = 0;
+        root.image.ProcessPixelRows(_ => {
+            for (int y = root.y; y < root.y + root.height; y++)
+            {
+                var row = _.GetRowSpan(y);
+                for (int x = root.x; x < root.x + root.width; x++)
+                {
+                    var pixel = row[x];
+                    if (colorChannel == 'R') {
+                        covarianceValue += (pixel.R - colorChannelMeanOriginal) * (cloneTop.rgba.R - colorChannelMeanOriginal);
+                    } else if (colorChannel == 'B') {
+                        covarianceValue += (pixel.B - colorChannelMeanOriginal) * (cloneTop.rgba.B - colorChannelMeanOriginal);
+                    } else if (colorChannel == 'G'){
+                        covarianceValue += (pixel.G - colorChannelMeanOriginal) * (cloneTop.rgba.G - colorChannelMeanOriginal);
+                    } 
+                }
+            }
+        });
+
+        return covarianceValue / ((root.width * root.height) - 1);
     }
 
     public static double MeanChannelColorValue(ImageTree root, char colorChannel) {
@@ -571,10 +676,11 @@ public class ImageTree {
                 entropy -= probColorChannel[i] * Math.Log2(probColorChannel[i]);
             }
         }                
-        // Console.WriteLine();
 
         return entropy;
     }
+
+    // bonus : ssim method
 
     // normalize image tree if it cannot be divided anymore
     public static void NormalizeImageTree(ImageTree root){
