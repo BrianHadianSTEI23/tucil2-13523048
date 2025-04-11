@@ -52,7 +52,7 @@ class Program {
                         Console.WriteLine("2. Mean Absolute Deviation");
                         Console.WriteLine("3. Max Pixel Difference");
                         Console.WriteLine("4. Entropy");
-                        // Console.WriteLine("5. SSIM");
+                        Console.WriteLine("5. SSIM");
                         int errorDetectionMethod = Convert.ToInt16(Console.ReadLine());
 
                         // enter the output path
