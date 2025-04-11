@@ -147,10 +147,18 @@ class Program {
                         BuildImageFromImageTree(root,ref constructImage);
 
                         // construct GIF (if requested)
+                        string? outputPathGIF = null;
                         Image<Rgba32> constructGIF = new Image<Rgba32>(root.width, root.height);
                         int currGIFFrame = 0;
                         if (GIFRequest == true)
                         {
+                            Console.WriteLine("Enter your output path for GIF : ");
+                            outputPathGIF = Console.ReadLine();
+                            string directoryGIF = Path.GetDirectoryName(outputPathGIF);
+                            if (!Directory.Exists(directoryGIF))
+                            {
+                                Directory.CreateDirectory(directoryGIF);
+                            }
                             BuildImageGIFFromImageTree(root, GIFRequest, ref constructGIF, ref currGIFFrame);   
                         }
 
@@ -203,11 +211,11 @@ class Program {
                         Console.WriteLine($"Tree depth : {root.getImageTreeDepth(root)}");
                         Console.WriteLine($"File size before compression : {fileInfoBeforeCompression.Length / 1024.0} kb");
                         Console.WriteLine($"File size before compression : {fileInfoAfterCompression.Length / 1024.0} kb");
-                        Console.WriteLine($"Compression rate : {1 - (fileInfoAfterCompression.Length / 1024.0) / (fileInfoBeforeCompression.Length / 1024.0)}");
-                        Console.WriteLine($"Your image processed successfully and saved at ../test/output/{pathArray[pathArray.Length - 2]}_output");
+                        Console.WriteLine($"Compression rate : {1 - ((fileInfoAfterCompression.Length / 1024.0) / (fileInfoBeforeCompression.Length / 1024.0))}");
+                        Console.WriteLine($"Your image processed successfully and saved at {outputPath}");
                         if (GIFRequest == true)
                         {
-                            Console.WriteLine($"Your GIF image processed successfully and saved at ../test/output/{pathArray[pathArray.Length - 2]}_output_gif");
+                            Console.WriteLine($"Your GIF image processed successfully and saved at {outputPathGIF}");
                         }
 
                     } else {
